@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<script>
+			function resizeIframe(obj) {
+			  obj.style.height = obj.contentWindow.document.documentElement.scrollHeight + 'px';
+			}
+		  </script>
+	</head>
+	<body>
+		<h1>Project Midterm Submission</h1>
+		<h2>Cannalytics Crew</h2>
+		<h5>Aayush Acharya - 2021101061</h3>
+		<h5>Lakshya Shastri - 2021101002</h3>
+		<h5>Muhammed Shamil K - 2021111021</h3>
+
+			<h3>Visualization 1: Changes in happiness over time: choropleth map for happiness scores of all countries over time</h3>
+			<iframe src="./worldmap.html" frameborder="0" scrolling="no" onload="resizeIframe(this)" width="100%"></iframe>
+			<h3>Visualization 2: Stacked bar chart to show how much each factor contributes to the overall happiness score of each country</h3>
+			<iframe src="./stacked.html" frameborder="0" scrolling="no" onload="resizeIframe(this)" width="100%"></iframe>
+	</body>
+	</html>

@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<meta charset="utf-8" />
+<head>
+	<style>
+		.tooltip {
+			position: absolute;
+			background-color: white;
+			padding: 8px;
+			border: 1px solid #ccc;
+			border-radius: 4px;
+			pointer-events: none;
+			font-size: 14px;
+		}
+		#india {
+			stroke: #101010;
+			stroke-width: .6;
+			}
+		
+	</style>
+</head>
+<!-- Load d3.js -->
+<script src="https://d3js.org/d3.v4.js"></script>
+<script src="https://d3js.org/d3-scale-chromatic.v1.min.js"></script>
+<script src="https://d3js.org/d3-geo-projection.v2.min.js"></script>
+<script src="https://unpkg.com/@popperjs/core@2/dist/umd/popper.min.js"></script>
+<script src="https://unpkg.com/tippy.js@6/dist/tippy-bundle.umd.js"></script>
+
+<script src="https://unpkg.com/@popperjs/core@2"></script>
+<script src="https://unpkg.com/tippy.js@6"></script>
+<!-- Create an element where the map will take place -->
+<input id="check1" type="radio" name="year" value="2015" checked > 2015</input>
+<input type="radio" name="year" value="2016" > 2016</input>
+<input type="radio" name="year" value="2017" > 2017</input>
+<input type="radio" name="year" value="2018" > 2018</input>
+<input type="radio" name="year" value="2019" > 2019</input>
+<svg id="my_dataviz" width="1600" height="500"></svg>
+
+<script>
+	let current_year = 2015;
+	const year_selector = document.querySelectorAll("input[type='radio']");
+	year_selector.forEach((radio) => {
+		radio.addEventListener("change", (e) => {
+			current_year = e.target.value;
+			d3.select("#my_dataviz").selectAll("*").remove();
+			createGraph(current_year, 0);
+		});
+	});
+
+	function createGraph(i, z) {
+		d3.select("#my_dataviz").selectAll("*").remove();
+		var svg = d3.select("svg")
+			.attr("width", 1600)
+			.attr("height", 500)
+		let width = 1600
+		let height = 500
+	// Map and projection
+		var path = d3.geoPath();
+		var projection = d3
+			.geoRobinson()
+			.scale(180)
+			.translate([width / 2, height / 2]);
+
+		// Data and color scale
+		var data = d3.map();
+		var colorScale = d3
+			.scaleThreshold()
+			.domain([3,4,5,5.5,6,6.5,7,8])
+			.range(d3.schemeGreens[9]);
+
+	const tooltip = d3
+		.select("body")
+		.append("div")
+		.attr("class", "tooltip")
+		.style("opacity", 0);
+		let centered;
+		let dString = "./merged" + i + ".csv";
+		const x = d3.scaleLinear().domain([0, 10.0]).rangeRound([600, 860]);
+
+		const legend = svg.append("g").attr("id", "legend");
+
+		const legend_entry = legend
+			.selectAll("g.legend")
+			.data(
+				colorScale.range().map(function (d) {
+					d = colorScale.invertExtent(d);
+					if (d[0] == null) d[0] = x.domain()[0];
+					if (d[1] == null) d[1] = x.domain()[1];
+					return d;
+				})
+			)
+			.enter()
+			.append("g")
+			.attr("class", "legend_entry");
+
+		const ls_w = 20,
+			ls_h = 20;
+
+		legend_entry
+			.append("rect")
+			.attr("x", 120)
+			.attr("y", function (d, i) {
+				return height - i * ls_h - 2 * ls_h + 10;
+			})
+			.attr("width", ls_w)
+			.attr("height", ls_h)
+			.style("fill", function (d) {
+				return colorScale(d[0]);
+			})
+			.style("opacity", 0.8);
+
+		legend_entry
+			.append("text")
+			.attr("x", 150)
+			.attr("y", function (d, i) {
+				return height - i * ls_h - ls_h - 6 + 10;
+			})
+			.text(function (d, i) {
+				if (i === 0) return "< " + d[1];
+				if (d[1] < d[0]) return d[0];
+				if (d[0] === 8.0) return "> " + d[0];
+				return d[0] + " - " + d[1];
+			});
+
+		legend.append("text").attr("x", 115).attr("y", 300).text("Happiness Score");
+	// Load external data and boot
+		d3.queue()
+			.defer(
+				d3.json,
+				"https://raw.githubusercontent.com/holtzy/D3-graph-gallery/master/DATA/world.geojson"
+			)
+			.defer(d3.csv, dString, function (d) {
+				data.set(d.code, +d.Happiness_Score);
+			})
+			.await(ready);
+				// .on("click", click);
+		function ready(error, topo) {
+			let mouseOver = function (d) {
+				d3.selectAll("path")
+					.transition()
+					.duration(200)
+					.style("opacity", 0.5)
+					.style("stroke", "transparent");
+				d3.select(this)
+					.transition()
+					.duration(200)
+					.style("opacity", 1)
+					.style("stroke", "black");
+				if(d.properties.name === "India") {
+					tooltip
+						.transition()
+						.duration(200)
+						.style("opacity", 1)
+						.text(d.properties.name + ": " + (data.get(d.id) || "N/A"));
+				}
+				else {
+					tooltip
+						.transition()
+						.duration(200)
+						.style("opacity", 1)
+						.text(d.properties.name + ": " + (data.get(d.id) || "N/A"));
+				}
+				// Add event listener for mousemove
+				d3.select(this).on("mousemove", function () {
+					tooltip
+						.style("left", d3.event.pageX + 10 + "px")
+						.style("top", d3.event.pageY - 15 + "px");
+				});
+			};
+
+			let mouseLeave = function () {
+				d3.selectAll("path")
+					.transition()
+					.duration(200)
+					.style("opacity", 1)
+					.style("stroke", "transparent");
+				d3.select(this)
+					.transition()
+					.duration(200)
+					.style("opacity", 1)
+					.style("stroke", "transparent");
+				tooltip.transition().duration(300).style("opacity", 0);
+			};
+			function click() {
+				// Hide the tooltip
+				tooltip.transition().duration(300).style("opacity", 0);
+				createIndia()
+			}
+			// Draw the map
+			world = svg
+				.append("g")
+				.selectAll("path")
+				.data(topo.features)
+				.enter()
+				.append("path")
+				// draw each country
+				.attr("d", path.projection(projection))
+				// set the color of each country
+				.attr("fill", function (d) {
+					d.total = data.get(d.id);
+					return d.total ? colorScale(d.total) : "#cccccc";
+				})
+				.attr("id", function (d) {
+					return d.properties.name;
+				})
+				.on("mouseover", mouseOver)
+				.on("mouseleave", mouseLeave);
+			svg.select("#India").on("click", click);
+			if(z) {
+				world
+				.attr(
+					"transform",
+					"scale(4)translate(-870,-120)"
+				);
+				world
+				.transition("zoomOut")
+				.duration(1000)
+				.attr(
+					"transform",
+					"scale(1)translate(0,0)"
+				);
+				
+			}
+				
+		}
+	}
+	function createIndia() {
+		// Hide radio button with id check1 and label
+		d3.select("#check1").style("opacity", "0");
+		d3.select("#my_dataviz").selectAll("*").remove();
+		d3.select(".tooltip").style("opacity", 0);
+		var svg = d3.select("svg"),
+			width = +svg.attr("width"),
+			height = +svg.attr("height");
+		
+
+		var proj = d3
+			.geoRobinson()
+			.scale(800)
+			.center([0, 0])
+			.rotate([0, 0, -10])
+			.translate([-350, 400]);
+		var path = d3.geoPath();
+		var india = svg.append("g")
+		.attr("id", "india");
+		const tooltip = d3
+		.select("body")
+		.append("div")
+		.attr("class", "tooltip")
+		.style("opacity", 0);
+		var colorScale = d3
+			.scaleThreshold()
+			.domain([3.15,3.25,3.3,3.35,3.4,3.45,3.5,3.55])
+			.range(d3.schemeGreens[9]);
+		function click() {
+			createGraph(current_year, 1)
+		}
+		// Create rectangle as background upon clicking runs click()
+		india
+			.append("rect")
+			.attr("x", 0)
+			.attr("y", 0)
+			.attr("width", width)
+			.attr("height", height)
+			.attr("fill", "white")
+			.style("stroke", "transparent")
+			.on("click", click);
+		d3.json("states.json", function (json) {
+			let mouseOver = function (d) {
+			d3.selectAll("path")
+				.transition()
+				.duration(200)
+				.style("opacity", 0.5);
+			d3.select(this)
+				.transition()
+				.duration(200)
+				.style("opacity", 1); 
+				tooltip
+					.transition()
+					.duration(200)
+					.style("opacity", 1)
+					.text(d.id + ": " + ((d.total) || "N/A"));
+				d3.select(this).on("mousemove", function () {
+					tooltip
+						.style("left", d3.event.pageX + 10 + "px")
+						.style("top", d3.event.pageY - 15 + "px");
+				});
+			};
+
+			let mouseLeave = function () {  
+				d3.selectAll("path")
+					.transition()
+					.duration(200)
+					.style("opacity", 1);              
+				tooltip.transition().duration(300).style("opacity", 0);
+			};
+		const x = d3.scaleLinear().domain([0, 3.6]).rangeRound([600, 860]);
+
+			const legend = svg.append("g").attr("id", "legend");
+
+			const legend_entry = legend
+				.selectAll("g.legend")
+				.data(
+					colorScale.range().map(function (d) {
+						d = colorScale.invertExtent(d);
+						if (d[0] == null) d[0] = x.domain()[0];
+						if (d[1] == null) d[1] = x.domain()[1];
+						return d;
+					})
+				)
+				.enter()
+				.append("g")
+				.attr("class", "legend_entry");
+
+			const ls_w = 20,
+				ls_h = 20;
+
+			legend_entry
+				.append("rect")
+				.attr("x", 120)
+				.attr("y", function (d, i) {
+					return height - i * ls_h - 2 * ls_h + 10;
+				})
+				.attr("width", ls_w)
+				.attr("height", ls_h)
+				.style("fill", function (d) {
+					return colorScale(d[0]);
+				})
+				.style("opacity", 0.8);
+
+			legend_entry
+				.append("text")
+				.attr("x", 150)
+				.attr("y", function (d, i) {
+					return height - i * ls_h - ls_h - 6 + 10;
+				})
+				.text(function (d, i) {
+					if (i === 0) return "< " + d[1];
+					if (d[1] < d[0]) return d[0];
+					if (d[0] === 3.6) return "> " + d[0];
+					return d[0] + " - " + d[1];
+				});
+
+			legend.append("text").attr("x", 115).attr("y", 300).text("Happiness Score");
+		
+		
+		india.selectAll("path")
+			.data(json.features)
+			.enter().append("path")
+			.attr("d", path.projection(proj))
+			.style("fill", function (d) { return colorScale(d.total); })
+			.style("opacity", 1)
+			.on('mouseleave', mouseLeave)
+			.on('mouseenter', mouseOver);
+		// Focus on India slowly
+		india
+			.attr(
+				"transform",
+				"scale(0.3)translate(2700,400)"
+			);
+		india
+			.transition()
+			.duration(1000)
+			.attr(
+				"transform",
+				"translate(-100,10)scale("+ 1.1 +")"
+			);
+		});
+	}
+	createGraph(2015, 0);
+</script>
