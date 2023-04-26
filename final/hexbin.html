@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<meta charset="utf-8" />
+
+<!-- Load d3.js -->
+<script src="https://d3js.org/d3.v6.js"></script>
+
+<!-- specific plugin -->
+<script src="https://d3js.org/d3-hexbin.v0.2.min.js"></script>
+
+<!-- Create a div where the graph will take place -->
+<div id="my_dataviz"></div>
+
+<select id="factor-dropdown">
+	<option value="Economy (GDP per Capita)">Economy (GDP per Capita)</option>
+	<option value="Family">Family</option>
+	<option value="Health (Life Expectancy)">Health (Life Expectancy)</option>
+	<option value="Freedom">Freedom</option>
+	<option value="Trust (Government Corruption)">
+		Trust (Government Corruption)
+	</option>
+	<option value="Generosity">Generosity</option>
+</select>
+
+<script>
+	// set the dimensions and margins of the graph
+	var margin = { top: 10, right: 30, bottom: 30, left: 40 },
+		width = 690 - margin.left - margin.right,
+		height = 600 - margin.top - margin.bottom;
+
+	// append the svg object to the body of the page
+	var svg = d3
+		.select("#my_dataviz")
+		.append("svg")
+		.attr("width", width + margin.left + margin.right)
+		.attr("height", height + margin.top + margin.bottom)
+		.append("g")
+		.attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+	// Read data
+	d3.csv("./2015.csv").then(data => {
+		// Set default factor to "Economy (GDP per Capita)"
+		var factor = "Economy (GDP per Capita)";
+		updatePlot(factor);
+
+		// Update the plot when the dropdown value changes
+		d3.select("#factor-dropdown").on("change", function () {
+			factor = this.value;
+			updatePlot(factor);
+		});
+
+		function updatePlot(factor) {
+			svg.selectAll(".hexbin-path").remove();
+			svg.selectAll(".x-axis").remove(); // Remove the previous X axis
+			svg.selectAll(".x-axis-label").remove(); // Remove the previous X axis label
+
+			// Calculate the minimum and maximum values for the selected factor and Happiness Score
+			var xMin = d3.min(data, d => +d[factor]);
+			var xMax = d3.max(data, d => +d[factor]);
+			var yMin = d3.min(data, d => +d["Happiness_Score"]);
+			var yMax = d3.max(data, d => +d["Happiness_Score"]);
+
+			// Add X axis
+			var x = d3
+				.scaleLinear()
+				.domain([xMin, xMax + 0.5])
+				.range([0, width]);
+			svg.append("g")
+				.attr("transform", "translate(0," + height + ")")
+				.attr("class", "x-axis")
+				.call(d3.axisBottom(x));
+
+			// Add Y axis
+			var y = d3
+				.scaleLinear()
+				.domain([yMin, yMax + 0.5])
+				.range([height, 0]);
+			svg.append("g").call(d3.axisLeft(y));
+
+			// Reformat the data: d3.hexbin() needs a specific format
+			var inputForHexbinFun = [];
+			let inputCopy = [];
+			data.forEach(function (d, i) {
+				inputForHexbinFun.push([x(d[factor]), y(d.Happiness_Score)]); // Note that we had the transform value of X and Y !
+				inputCopy.push({
+					x: x(d[factor]),
+					y: y(d.Happiness_Score),
+					index: i
+				});
+			});
+
+			// Prepare a color palette
+			var color = d3
+				.scaleLinear()
+				.domain([0, 5]) // Adjust this domain according to the range of data counts in hexagons
+				.range(["transparent", "black"]);
+
+			// Compute the hexbin data
+			var hexbin = d3
+				.hexbin()
+				.radius(9) // size of the bin in px
+				.extent([
+					[0, 0],
+					[width, height]
+				]);
+
+			// Plot the hexbins
+			svg.append("clipPath")
+				.attr("id", "clip")
+				.append("rect")
+				.attr("width", width)
+				.attr("height", height);
+
+			svg.append("g")
+				.attr("clip-path", "url(#clip)")
+				.selectAll("path")
+				.data(hexbin(inputForHexbinFun))
+				.join("path")
+				.attr("class", "hexbin-path")
+				.attr("d", hexbin.hexagon())
+				.attr("transform", function (d) {
+					return "translate(" + d.x + "," + d.y + ")";
+				})
+				.attr("fill", function (d) {
+					return color(d.length);
+				})
+				.attr("stroke", "black")
+				.attr("stroke-width", "0.1");
+
+			// Create a tooltip
+			var tooltip = d3
+				.select("body")
+				.append("div")
+				.style("position", "absolute")
+				.style("visibility", "hidden")
+				.style("background-color", "white")
+				.style("border", "solid")
+				.style("border-width", "1px")
+				.style("border-radius", "5px")
+				.style("padding", "10px");
+
+			// Add mouse events to hexagons
+			svg.selectAll(".hexbin-path")
+				.on("mouseover", function (event, d) {
+					d3.select(this).attr("stroke-width", "1");
+
+					var countries = d.map(h => {
+						let dataIndex = 0;
+						return {
+							country: data[dataIndex].Country,
+							happinessScore: data[dataIndex].Happiness_Score,
+							selectedFactorValue: data[dataIndex][factor]
+						};
+					});
+
+					var tooltipHtml =
+						"<strong>Count:</strong> " + d.length + "<br><br>";
+					countries.forEach(country => {
+						tooltipHtml +=
+							"<strong>Country:</strong> " +
+							country.country +
+							"<br>" +
+							"<strong>Happiness Score:</strong> " +
+							country.happinessScore +
+							"<br>" +
+							"<strong>" +
+							factor +
+							":</strong> " +
+							country.selectedFactorValue +
+							"<br><br>";
+					});
+					tooltip.html(tooltipHtml);
+					tooltip.style("visibility", "visible");
+				})
+				.on("mousemove", function (event) {
+					tooltip
+						.style("top", event.pageY - 10 + "px")
+						.style("left", event.pageX + 10 + "px");
+				})
+				.on("mouseout", function () {
+					d3.select(this).attr("stroke-width", "0.1");
+					tooltip.style("visibility", "hidden");
+				});
+
+			// Create legend
+			var legendSvg = svg
+				.append("g")
+				.attr("class", "legend")
+				.attr(
+					"transform",
+					"translate(" + (width - 100) + "," + (height - 100) + ")"
+				);
+
+			// Legend scale
+			var legendScale = d3
+				.scaleLinear()
+				.domain([1, 4]) // Update this domain according to the range of data counts in hexagons
+				.range([0, 100]);
+
+			// Add legend color gradient
+			legendSvg
+				.append("defs")
+				.append("linearGradient")
+				.attr("id", "legend-gradient")
+				.attr("x1", "0%")
+				.attr("y1", "100%")
+				.attr("x2", "0%")
+				.attr("y2", "0%")
+				.selectAll("stop")
+				.data(
+					color.ticks().map((t, i, n) => ({
+						offset: `${(100 * i) / n.length}%`,
+						color: color(t)
+					}))
+				)
+				.join("stop")
+				.attr("offset", d => d.offset)
+				.attr("stop-color", d => d.color);
+
+			// Add the legend gradient
+			legendSvg
+				.append("rect")
+				.attr("x", 0)
+				.attr("y", 0)
+				.attr("width", 20)
+				.attr("height", 100)
+				.style("fill", "url(#legend-gradient)");
+
+			// Add legend axis
+			legendSvg
+				.append("g")
+				.attr("transform", "translate(20,0)")
+				.call(d3.axisRight(legendScale).ticks(4)); // Adjust the number of ticks here
+
+			// Add X axis label
+			svg.append("text")
+				.attr("text-anchor", "middle")
+				.attr("x", width / 2 + margin.left)
+				.attr("y", height + margin.top + 20)
+				.attr("class", "x-axis-label")
+				.text(`Contribution of ${factor}`);
+
+			// Add Y axis label
+			svg.append("text")
+				.attr("text-anchor", "end")
+				.attr("transform", "rotate(-90)")
+				.attr("y", -margin.left + 10)
+				.attr("x", -height / 2)
+				.text("Happiness Score");
+		}
+	});
+</script>
