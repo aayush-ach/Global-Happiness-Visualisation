@@ -1,28 +1,105 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 	<head>
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<link
+			href="https://fonts.googleapis.com/css?family=Montserrat:400,700"
+			rel="stylesheet"
+		/>
+		<style>
+			body {
+				font-family: "Montserrat", sans-serif;
+				background-color: #f0f0f0;
+				text-align: center;
+				margin: 0;
+				padding: 0;
+			}
+			h1,
+			h2 {
+				color: #353535;
+				margin-bottom: 1rem;
+			}
+
+			h5 {
+				color: #5e5e5e;
+				margin-bottom: 0.5rem;
+			}
+
+			iframe {
+				width: 100%;
+				border: none;
+			}
+
+			h3 {
+				color: #0b8457;
+				margin-bottom: 0.5rem;
+			}
+
+			main {
+				max-width: 1000px;
+				margin: 0 auto;
+				padding: 2rem;
+			}
+
+			#worldmap-iframe {
+				width: 150%;
+				border: none;
+				margin-left: -25%;
+			}
+		</style>
 		<script>
 			function resizeIframe(obj) {
-			  obj.style.height = obj.contentWindow.document.documentElement.scrollHeight + 'px';
+				obj.style.height =
+					obj.contentWindow.document.documentElement.scrollHeight +
+					"px";
 			}
-		  </script>
+		</script>
 	</head>
 	<body>
-		<h1>Project Midterm Submission</h1>
-		<h2>Cannalytics Crew</h2>
-		<h5>Aayush Acharya - 2021101061</h3>
-		<h5>Lakshya Shastri - 2021101002</h3>
-		<h5>Muhammed Shamil K - 2021111021</h3>
-
-			<h3>Visualization 1: Changes in happiness over time: choropleth map for happiness scores of all countries over time</h3>
-			<iframe src="./worldmap.html" frameborder="0" scrolling="no" onload="resizeIframe(this)" width="100%"></iframe>
-			<h3>Visualization 2: Stacked bar chart to show how much each factor contributes to the overall happiness score of each country</h3>
-			<iframe src="./stacked.html" frameborder="0" scrolling="no" onload="resizeIframe(this)" width="100%"></iframe>
-			<h3>Visualization 4: Hexbin Plot: Happiness vs GDP, Life Expectancy, and Other Factors</h3>
-			<iframe src="./hexbin.html" frameborder="0" scrolling="no" onload="resizeIframe(this)" width="100%"></iframe>
-			<h3>Visualization 5: GDP vs contribution of GDP to the happiness score of a country</h3>
-			<iframe src="./gdp/index.html" frameborder="0" scrolling="no" onload="resizeIframe(this)" width="100%"></iframe>
+		<main>
+			<h1>Project Midterm Submission</h1>
+			<h2>Cannalytics Crew</h2>
+			<h5>Aayush Acharya - 2021101061</h5>
+			<h5>Lakshya Shastri - 2021101002</h5>
+			<h5>Muhammed Shamil K - 2021111021</h5>
+			<h3>
+				Visualization 1: Changes in happiness over time: choropleth map
+				for happiness scores of all countries over time
+			</h3>
+			<iframe
+				src="./worldmap.html"
+				scrolling="no"
+				onload="resizeIframe(this)"
+				id="worldmap-iframe"
+			></iframe>
+			<h3>
+				Visualization 2: Stacked bar chart to show how much each factor
+				contributes to the overall happiness score of each country
+			</h3>
+			<iframe
+				src="./stacked.html"
+				scrolling="no"
+				onload="resizeIframe(this)"
+			></iframe>
+			<h3>
+				Visualization 4: Hexbin Plot: Happiness vs GDP, Life Expectancy,
+				and Other Factors
+			</h3>
+			<iframe
+				src="./hexbin.html"
+				scrolling="no"
+				onload="resizeIframe(this)"
+			></iframe>
+			<h3>
+				Visualization 5: GDP vs contribution of GDP to the happiness
+				score of a country
+			</h3>
+			<iframe
+				src="./gdp/index.html"
+				scrolling="no"
+				onload="resizeIframe(this)"
+			></iframe>
+		</main>
 	</body>
-	</html>
+</html>
