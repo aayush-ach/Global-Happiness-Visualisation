@@ -52,6 +52,7 @@ function update(happy_data, gdp_data, year, countries) {
 			.attr('fill', function (d) {
 				return d;
 			})
+			.attr('opacity', 0.6)
 			.attr('x', function (d, i) {
 				return i * 20;
 			})
@@ -105,7 +106,7 @@ function update(happy_data, gdp_data, year, countries) {
 		.attr("cy", function (d) { return y(d["happiness_percent"]); })
 		.attr("r", 7)
 		.style("fill", d => color(d["Country"]))
-		.style("opacity", 0.5)
+		.style("opacity", 0.6)
 		.style("stroke", "white")
 		.on("mouseover", function (event, d) {
 			const data = d3.select(this).datum();
