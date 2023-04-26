@@ -20,18 +20,21 @@
 <!-- Create a div where the chart will take place -->
 <style>
 	#chart {
-		width: 1500px;
 		height: 600px;
-		overflow-x: scroll;
-		overflow-y: hidden;
 	}
 </style>
 <div id="chart"></div>
+<div>
+	<button id="q1">Q1</button>
+	<button id="q2">Q2</button>
+	<button id="q3">Q3</button>
+	<button id="q4">Q4</button>
+</div>
 
 <script>
 	// Set dimensions and margins for the chart
 	const margin = { top: 20, right: 20, bottom: 80, left: 60 };
-	const chartWidth = 50 * 200; // Adjust chart width according to the number of countries
+	const chartWidth = 50 * 15; // Adjust chart width according to the number of countries
 	const width = chartWidth - margin.left - margin.right;
 	const height = 600 - margin.top - margin.bottom;
 
@@ -45,6 +48,18 @@
 		.attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
 	const tooltip = d3.select("body").append("div").attr("class", "tooltip");
+
+	const xAxisGroup = svg.append("g").attr("class", "axis x-axis");
+	const yAxisGroup = svg.append("g").attr("class", "axis y-axis");
+
+	// Add y-axis label
+	svg.append("text")
+		.attr("transform", "rotate(-90)")
+		.attr("y", 0 - margin.left)
+		.attr("x", 0 - height / 2)
+		.attr("dy", "1em")
+		.style("text-anchor", "middle")
+		.text("Happiness Score");
 
 	function mouseOver(d, i) {
 		tooltip.transition().duration(200).style("opacity", 1);
@@ -79,8 +94,18 @@
 			.attr("opacity", 1);
 	}
 
-	// Load the data
-	d3.csv("./2015.csv").then(data => {
+	function filterDataByQuartile(data, quartile) {
+		const totalCountries = data.length;
+		const countriesPerQuartile = Math.ceil(totalCountries / 4);
+		const startIndex = (quartile - 1) * countriesPerQuartile;
+		const endIndex = quartile * countriesPerQuartile;
+		return data.slice(startIndex, endIndex);
+	}
+
+	function renderChart(data) {
+		// Clear the previous chart
+		svg.selectAll(".stack").remove();
+
 		// Define the keys for the stack
 		const keys = [
 			"Economy (GDP per Capita)",
@@ -99,8 +124,8 @@
 		const x = d3
 			.scaleBand()
 			.domain(data.map(d => d.Country))
-			.range([0, width])
-			.padding(0.1);
+			.range([0, width + 400])
+			.padding(0.2);
 
 		const y = d3.scaleLinear().domain([0, 10]).range([height, 0]);
 
@@ -108,10 +133,11 @@
 
 		// Create the stacks
 		const stacks = svg
-			.selectAll("g")
+			.selectAll(".stack")
 			.data(stack(data))
 			.enter()
 			.append("g")
+			.attr("class", "stack")
 			.attr("fill", d => z(d.key));
 
 		// Create the rectangles
@@ -132,11 +158,11 @@
 		const xAxis = d3.axisBottom(x);
 		const yAxis = d3.axisLeft(y).ticks(10);
 
-		svg.append("g").attr("class", "axis x-axis").call(xAxis);
-		svg.append("g").attr("class", "axis y-axis").call(yAxis);
+		xAxisGroup.call(xAxis);
+		yAxisGroup.call(yAxis);
 
 		// Position axes
-		svg.select(".x-axis")
+		xAxisGroup
 			.attr("transform", "translate(0," + height + ")")
 			.selectAll("text")
 			.attr("text-anchor", "end")
@@ -144,7 +170,64 @@
 			.attr("dy", "0.15em")
 			.attr("transform", "rotate(-65)");
 
-		svg.select(".y-axis").attr("transform", "translate(0,0)");
+		yAxisGroup.attr("transform", "translate(0,0)");
+
+		// Legend
+		const legend = svg
+			.selectAll(".legend")
+			.data(keys.slice().reverse())
+			.enter()
+			.append("g")
+			.attr("class", "legend")
+			.attr("transform", (d, i) => "translate(0," + i * 20 + ")");
+
+		legend
+			.append("rect")
+			.attr("x", width - 18)
+			.attr("width", 18)
+			.attr("height", 18)
+			.attr("fill", z);
+
+		legend
+			.append("text")
+			.attr("x", width - 24)
+			.attr("y", 9)
+			.attr("dy", ".35em")
+			.style("text-anchor", "end")
+			.text(d => d);
+	}
+
+	// Load the data
+	d3.csv("./2015.csv").then(data => {
+		const filteredData = filterDataByQuartile(data, 1);
+		renderChart(filteredData);
+
+		document.getElementById("q1").addEventListener("click", () => {
+			const filteredData = filterDataByQuartile(data, 1);
+			renderChart(filteredData);
+		});
+
+		document.getElementById("q2").addEventListener("click", () => {
+			const filteredData = filterDataByQuartile(data, 2);
+			renderChart(filteredData);
+		});
+
+		document.getElementById("q3").addEventListener("click", () => {
+			const filteredData = filterDataByQuartile(data, 3);
+			renderChart(filteredData);
+		});
+
+		document.getElementById("q4").addEventListener("click", () => {
+			const filteredData = filterDataByQuartile(data, 4);
+			renderChart(filteredData);
+		});
+
+		// Create axes
+		const xAxis = d3.axisBottom().scale(x);
+		const yAxis = d3.axisLeft(y).ticks(10);
+
+		const xAxisGroup = svg.append("g").attr("class", "axis x-axis");
+		const yAxisGroup = svg.append("g").attr("class", "axis y-axis");
 
 		// Add y-axis label
 		svg.append("text")
@@ -154,33 +237,5 @@
 			.attr("dy", "1em")
 			.style("text-anchor", "middle")
 			.text("Happiness Score");
-
-		// Create a legend
-		const legend = svg
-			.selectAll(".legend")
-			.data(keys)
-			.enter()
-			.append("g")
-			.attr("class", "legend")
-			.attr("transform", function (d, i) {
-				return "translate(0," + i * 20 + ")";
-			});
-
-		legend
-			.append("rect")
-			.attr("x", width - 18)
-			.attr("width", 18)
-			.attr("height", 18)
-			.style("fill", z);
-
-		legend
-			.append("text")
-			.attr("x", width - 24)
-			.attr("y", 9)
-			.attr("dy", ".35em")
-			.style("text-anchor", "end")
-			.text(function (d) {
-				return d;
-			});
 	});
 </script>
