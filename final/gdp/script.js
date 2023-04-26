@@ -1,7 +1,7 @@
 
-const margin = { top: 10, right: 30, bottom: 100, left: 60 },
+const margin = { top: 10, right: 60, bottom: 200, left: 100 },
 	width = 920 - margin.left - margin.right,
-	height = 500 - margin.top - margin.bottom;
+	height = 700 - margin.top - margin.bottom;
 
 // append the svg object to the body of the page
 let svg = d3.select("#my_dataviz")
@@ -14,6 +14,7 @@ let svg = d3.select("#my_dataviz")
 		`translate(${margin.left}, ${margin.top})`);
 
 //Read the data
+
 
 function update(happy_data, gdp_data, year, countries) {
 	svg.remove();
@@ -30,12 +31,57 @@ function update(happy_data, gdp_data, year, countries) {
 		.domain(countries)
 		.range([0, width]);
 
-	const colors = [...Array(25).keys()].map(x => d3.interpolateInferno(1 - ((x+1) / 25)));
+	const colors = [...Array(25).keys()].map(x => d3.interpolateInferno(1 - ((x + 1) / 25)));
 
 	const color = d3.scaleOrdinal()
 		.domain(filtered_happy.sort((b, a) => Number(b["Happiness Rank"]) - Number(a["Happiness Rank"])).map(x => x["Country"]))
 		.range(colors);
 
+	const opposite = d3.scaleOrdinal()
+	.domain(colors)
+	.range([...Array(25).keys()].map(x => x + 1));
+
+
+	function drawColorScale() {
+		var pallete = svg.append('g')
+			.attr('id', 'pallete')
+			.attr('transform', `translate(120, ${height + 100})`);
+
+		var swatch = pallete.selectAll('rect').data(colors);
+		swatch.enter().append('rect')
+			.attr('fill', function (d) {
+				return d;
+			})
+			.attr('x', function (d, i) {
+				return i * 20;
+			})
+			.attr('y', 50)
+			.attr('width', 20)
+			.attr('height', 10);
+
+		var texts = pallete.selectAll("foo")
+			.data(color.range())
+			.enter()
+			.append("text")
+			.attr("font-size", "10px")
+			.attr("text-anchor", "middle")
+			.attr("y", 80)
+			.attr('x', function (d, i) {
+				return i * 20 + 10;
+			})
+			.text(function (d) {
+				return (opposite(d))
+			})
+		
+		svg.append("text")
+			.attr("font-size", "10px")
+			.attr("text-anchor", "middle")
+			.attr("y", height + 120)
+			.attr("x", width / 2)
+			.text("Happiness Rank");
+
+
+	}
 	svg.append("g")
 		.attr("transform", `translate(0, ${height})`)
 		.call(d3.axisBottom(x))
@@ -68,6 +114,7 @@ function update(happy_data, gdp_data, year, countries) {
 				allowHTML: true
 			})
 		});
+	drawColorScale();
 
 
 }
